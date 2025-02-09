@@ -3,6 +3,8 @@ package com.learning.config;
 import com.learning.event.OrderEvent;
 import com.learning.event.OrderStatus;
 import com.learning.event.PaymentEvent;
+import com.learning.service.PaymentService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Flux;
@@ -12,6 +14,9 @@ import java.util.function.Function;
 
 @Configuration
 public class PaymentConsumerConfig {
+
+    @Autowired
+    private PaymentService paymentService;
 
     @Bean
     public Function<Flux<OrderEvent>, Flux<PaymentEvent>> paymentProcessor() {
@@ -24,9 +29,10 @@ public class PaymentConsumerConfig {
         //if balance sufficient -> Payment completed and deduct amount from db.
         //if payment not sufficient -> cancel the order event and update the amount in DB.
         if (OrderStatus.ORDER_CREATED.equals(orderEvent.getOrderStatus())) {
-            return Mono.fromSupplier(() -> null /*TODO*/);
+            return Mono.fromSupplier(() -> paymentService.newOrderEvent(orderEvent));
         }
 
-        return null;
+        return Mono.fromRunnable(() -> paymentService.cancelOrderEvent(orderEvent));
+
     }
 }
